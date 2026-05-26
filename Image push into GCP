@@ -1,0 +1,28 @@
+    1  apt-get update
+    2  sudo apt-get update
+    3  sudo apt install docker.io -y
+    4  git clone https://github.com/CloudDevOpsHub/Dockerfile-Advance-Demo.git
+    5  docker build -f Dockerfile.bloated -t app:bloated .
+    6  ls
+    7  cd Dockerfile-Advance-Demo 
+    
+    9  docker build -f Dockerfile.optimized -t app:optimized .
+   10  docker images
+
+   11  gcloud auth login
+   12  gcloud config set project meta-strata-494510-q5
+   13  gcloud auth configure-docker africa-south1-docker.pkg.dev
+
+   14  docker build -t my-ajith .
+   15  docker images
+   
+   
+   19  docker tag python:3.11-slim africa-south1-docker.pkg.dev/meta-strata-494510-q5/test/test/python:3.11-slim-v1
+
+   20  docker push africa-south1-docker.pkg.dev/meta-strata-494510-q5/test/test/python:3.11-slim-v1
+
+   21  gcloud auth list
+   22  gcloud auth configure-docker africa-south1-docker.pkg.dev
+   23  docker push africa-south1-docker.pkg.dev/meta-strata-494510-q5/test/test/python:3.11-slim-v1
+   24  docker push africa-south1-docker.pkg.dev/meta-strata-494510-q5/test
+   25  history
