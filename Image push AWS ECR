@@ -1,0 +1,59 @@
+    1  sudo apt-get update
+    2  sudo apt install docker.io -y
+    3  git clone https://github.com/CloudDevOpsHub/Dockerfile-Advance-Demo.git
+    4  ls
+    5  cd Dockerfile-Advance-Demo
+    6  docker build -f Dockerfile.optimized -t app:optimized .
+    7  docker images
+    8  apt install awscli
+    9  aws configure
+---------------------------------------------------------------------------------------------------------------------------
+
+Create an ECR repository:- 
+   10  aws ecr create-repository --repository-name my-app --region ap-south-1
+---------------------------------------------------------------------------------------------------------------------------------
+     
+This command is used to logs Docker into AWS ECR (Elastic Container Registry) so you can push or pull Docker images.
+   13  aws ecr get-login-password --region eu-north-1 | docker login --username AWS --password-stdin 921876749799.dkr.ecr.eu-north-1.amazonaws.com
+-------------
+      breakdown command in 2 part
+13.1 AWS CLI to generate a temporary authentication token for ECR.
+       aws ecr get-login-password --region eu-north-1
+
+Meaning
+aws → AWS CLI tool
+ecr → Elastic Container Registry service
+get-login-password → Generate Docker login password/token
+--region ap-south-1 → Use the Mumbai AWS region
+----------------------
+
+13.2 The pipe (|)
+
+The pipe sends the output of the first command into the second command.
+
+So:
+AWS generated password
+        ↓
+Docker login command
+---------------------------
+13.3 This logs Docker into the ECR registry.
+
+docker login --username AWS --password-stdin 921876749799.dkr.ecr.eu-north-1.amazonaws.com
+
+
+Meaning
+docker login → Authenticate Docker
+--username AWS → ECR requires username literally as AWS
+--password-stdin → Read password securely from stdin (pipe)
+123456789012.dkr.ecr.ap-south-1.amazonaws.com → Your ECR registry URL
+-------------------------------------------------------------------------------------------------------------------
+14 Tag your Docker image
+     docker tag python:3.11-slim  921876749799.dkr.ecr.eu-north-1.amazonaws.com/my-latest:image1
+     docker images
+------------------------------------------------------------------------------------------------------------------------
+15 Push the image in ECR
+      docker push 921876749799.dkr.ecr.eu-north-1.amazonaws.com/my-latest:image1
+
+
+Image successfully push into the AWS ECR...
+   
