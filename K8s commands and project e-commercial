@@ -1,0 +1,19 @@
+https://github.com/GoogleCloudPlatform/microservices-demo ------- project link
+
+
+regular commands:-
+       kubectl appy -f kubernetes-manifests.yaml
+       kubectl get nodes
+   27  kubectl run nginx --image=nginx:1.16
+   28  kubectl get po
+   29  kubectl get po -o wide
+   30  kubectl get svc
+   31  kubectl describe po nginx
+   32  kubectl create deployment shubhamnginx --image=nginx
+   33  kubectl get deploy
+   34  kubectl create deployment shubhamnginx --replicas=3
+   35  kubectl scale deployment shubhamnginx --replicas=3
+   36  kubectl get deploy
+   37  kubectl get po
+   38  kubectl delete po shubhamnginx-6cd77bfc7-9hwlw
+   39  kubectl get po
