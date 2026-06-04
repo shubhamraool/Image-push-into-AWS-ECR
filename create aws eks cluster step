@@ -81,5 +81,9 @@ curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
 
 2️⃣ Verify Helm Installation
 helm version
+------------------------------------------------------------------------------------------------
+CLUSTER delete command
+
+eksctl delete cluster --name <cluster-name> --region <region>
 
 
