@@ -74,3 +74,12 @@ for check used this command "kubectl get nodes"
 
 
   Without an IAM role, your EC2 cannot talk to AWS services.
+----------------------------------------------------------------------------------------------
+Install Helm on Ubuntu (Recommended Way)
+1️⃣ Download & Install Helm
+curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+2️⃣ Verify Helm Installation
+helm version
+
+
