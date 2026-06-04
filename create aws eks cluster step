@@ -1,0 +1,76 @@
+create ec2 instaice first
+1️⃣ Update Ubuntu
+sudo apt update && sudo apt upgrade -y
+-----------------------------------------------------
+2️⃣ Install AWS CLI v2
+
+Download & Install
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o awscliv2.zip
+sudo apt install unzip -y
+unzip awscliv2.zip
+sudo ./aws/install
+
+Verify
+aws --version
+
+Configure AWS
+aws configure
+
+Enter:
+AWS Access Key
+AWS Secret Key
+Region (example: ap-south-1)
+Output format: 
+------------------------------------------------------------------------------------------------------------------
+3️⃣ Install kubectl
+
+Download Latest kubectl
+curl -LO "https://dl.k8s.io/release/$(curl -Ls https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+
+Install
+chmod +x kubectl
+sudo mv kubectl /usr/local/bin/
+
+Verify
+kubectl version --client
+-----------------------------------------------------------------------------------------------------------
+4️⃣ Install eksctl
+
+Download & Install
+curl --silent --location \
+"https://github.com/weaveworks/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" \
+| tar xz -C /tmp
+sudo mv /tmp/eksctl /usr/local/bin
+
+Verify
+eksctl version
+-------------------------------------------------------------------------------------------------------
+the create on IAM role and give the admin permission to this instance.
+then attach this role to instance.
+     come to aws UI and go to the ec2 instance 
+    selected instance where above part install that instance selected
+    click on "action"
+    click on "security"
+    click on "modify IAM role"
+    select rolr which i created  and update 
+role is attached to the instance..
+----------------------------------------------------------------------------------------------------
+7️⃣ Create EKS Cluster (Example)
+
+eksctl create cluster \
+--name demo-eks \
+--region ap-south-1 \
+--nodegroup-name linux-nodes \
+--node-type t3.medium \
+--nodes 2
+
+for check used this command "kubectl get nodes"
+  -------------------------------------------------------------------------------------
+  go to the cluster and also give the admin permission so we see the workload.
+
+  in production not give the admin permission 
+
+
+
+
+  Without an IAM role, your EC2 cannot talk to AWS services.
