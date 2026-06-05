@@ -1,0 +1,161 @@
+que:--> I want to complete the assignment
+        first--i want to create ubuntu master and ubuntu slave
+        second is --ubuntu master and centos slave
+        third--- ubuntu of gcp master and ubuntu slave of aws
+        provide the steps by step sol how i can do this 
+
+
+Below is a clear, step-by-step solution to complete your assignment exactly as asked.
+I’ll use Jenkins master–agent (slave) architecture.
+
+🔹 Common Concept (for all 3 cases)
+Master → Jenkins controller (job scheduling, UI)
+Slave/Agent → Executes builds
+Communication → SSH (port 22)
+Jenkins → Master installs jobs, agent runs jobs
+
+✅ CASE 1: Ubuntu Master + Ubuntu Slave (Same network / VM)
+Step 1️⃣ Create 2 Ubuntu machines
+Ubuntu 20.04 / 22.04
+Name them:
+jenkins-master
+jenkins-slave
+Step 2️⃣ Install Jenkins on Ubuntu Master
+sudo apt update
+sudo apt install -y openjdk-17-jdk
+curl -fsSL https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key | sudo tee \
+/usr/share/keyrings/jenkins-keyring.asc > /dev/null
+echo deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc] \
+https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
+/etc/apt/sources.list.d/jenkins.list > /dev/null
+sudo apt update
+sudo apt install -y jenkins
+sudo systemctl start jenkins
+sudo systemctl enable jenkins
+
+Access:
+
+http://<master-ip>:8080
+
+Password:
+
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+Step 3️⃣ Prepare Ubuntu Slave
+sudo apt update
+sudo apt install -y openjdk-17-jdk openssh-server
+sudo systemctl enable ssh
+sudo systemctl start ssh
+
+Create Jenkins user:
+
+sudo useradd -m jenkins
+sudo passwd jenkins
+Step 4️⃣ Setup SSH from Master → Slave
+
+On master:
+
+sudo su - jenkins
+ssh-keygen
+ssh-copy-id jenkins@<slave-ip>
+
+Test:
+
+ssh jenkins@<slave-ip>
+Step 5️⃣ Add Slave in Jenkins UI
+Jenkins → Manage Jenkins
+Nodes
+New Node
+Name: ubuntu-slave
+Type: Permanent Agent
+Launch method: SSH
+Host: <slave-ip>
+Credentials: jenkins user
+Save → Agent connects ✅
+-------------------------------------------------------------------------------------------------------------------
+✅ CASE 2: Ubuntu Master + CentOS Slave
+Difference: Only slave OS changes
+Step 1️⃣ Ubuntu Master
+
+👉 Same as Case 1 (No change)
+
+Step 2️⃣ Prepare CentOS Slave
+sudo yum update -y
+sudo yum install -y java-17-openjdk openssh-server
+sudo systemctl enable sshd
+sudo systemctl start sshd
+
+Create Jenkins user:
+
+sudo useradd jenkins
+sudo passwd jenkins
+
+Allow SSH:
+
+sudo firewall-cmd --permanent --add-service=ssh
+sudo firewall-cmd --reload
+Step 3️⃣ SSH setup & Jenkins UI
+
+👉 Same steps as Case 1 (Step 4 & 5)
+
+✅ Ubuntu master → CentOS slave connected
+-----------------------------------------------------------------------------------------------------------------------------------
+✅ CASE 3: Ubuntu Master on GCP + Ubuntu Slave on AWS
+
+This is cross-cloud Jenkins setup 🌍
+
+Step 1️⃣ Create VM on GCP (Master)
+Ubuntu VM
+Allow ports:
+22 (SSH)
+8080 (Jenkins)
+
+Install Jenkins → same as Case 1
+
+Step 2️⃣ Create EC2 on AWS (Slave)
+Ubuntu EC2
+Security Group:
+SSH (22) → GCP public IP
+
+Install Java + SSH:
+
+sudo apt update
+sudo apt install -y openjdk-17-jdk openssh-server
+
+Create Jenkins user:
+
+sudo useradd -m jenkins
+sudo passwd jenkins
+Step 3️⃣ Network Connectivity
+
+✔ GCP VM can SSH into AWS EC2
+Test from GCP:
+
+ssh jenkins@<aws-ec2-public-ip>
+Step 4️⃣ Jenkins Node Configuration
+
+Same Jenkins UI steps:
+
+New Node
+SSH
+Host: AWS EC2 public IP
+Credentials: Jenkins user
+
+✅ Jenkins master on GCP → slave on AWS connected
+
+📌 Final Verification (All Cases)
+
+Run test job:
+
+echo "Hello from Jenkins Slave"
+hostname
+java -version
+
+You should see:
+
+Job runs on slave
+Correct OS shown
+🧾 Assignment Summary Table
+Case	Master	Slave	Status
+1	Ubuntu	Ubuntu	✅
+2	Ubuntu	CentOS	✅
+3	GCP Ubuntu	AWS Ubuntu	✅
