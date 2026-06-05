@@ -1,0 +1,20 @@
+installjenkins
+go to setting and click on node
+create node 
+    provide name 
+    remote root dir --- where the working dir space is cretaed(crete one folder and provide that folder path)
+                 mkdir dev
+                 mkdir june
+                 pwd path ------/root/dev/jun---this path mention here
+their command it will show. take that command and run on the server
+after run agent connect to the master successfully.
+
+
+now how to used this node?
+  change agent name in jenkinsfile if project is pipeline project
+  but it a freestyle project  then go to configure option and their is one option "Restrict where this project can be run"
+          in this option give the agent name and save
+
+
+if agent connection broken then again go to thr node select the nodes
+and run command again connection connected again
