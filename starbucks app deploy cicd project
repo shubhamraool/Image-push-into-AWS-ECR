@@ -1,0 +1,53 @@
+https://github.com/CloudDevOpsHub/Starbucks-Application.git------ci/cd project
+
+create heavy machine
+open some port
+      8080 : jenkins
+      3000 : nodejs app
+---------------------------------------------------------------------------------------
+install jenkins on using offical doc
+      https://www.jenkins.io/doc/book/installing/linux/
+install docker
+      chmod +x *.sh
+      run the file ./<filename>   so tool is install
+---------------------------------------------------------------------------------------
+in jenkins install plugins
+     Eclipse Temurin Installer
+     NodeJS
+     Docker
+     Docker Commons
+     Docker Pipeline,
+     Docker API
+     docker-build-step
+     Pipeline stage view
+-----------------------------------------------------------------------------------------------------
+Configure dockerhub in jenkins
+    Manage jekins--> credentical--> click on global--> add credentical--> username & password--> username = shubhamgreat--> pass = dockerhub pass-->
+    Id = docker-->description--> docker-->create
+  ----------------------------------------------------------------------------------------------
+configure/install different tools in jenkins
+    Manage jenkins--> tools
+           1] Java install
+                   add jdk--> name= jdk17-->click on install automaticall-->add installer--> select install from adoptiom.net--> version 17.0.8.1+1
+           2] Nojejs install
+                   add nojes--> name=node16-->click on install automaticall-->add installer-->version=16.20.0
+           3] docker install
+                    name=docker-->click on install automaticall-->add installer-->version latest-->save
+  ----------------------------------------------------------------------------------------------------------------------------
+Setup CI
+     create job-->name=cipipeline-->mention script and save
+---------------------------------------------------------------------------
+Setup Cd
+      create job-->name=cipipeline-->mention script and save and build the project and done starbucks app is run on 3000 port
+  ---------------------------------------------------------------------------------------------------------------------------------
+
+We run CI seperately and CD sepreately so now we need to setup CI/CD yek sath (dependency mercy karni padegi)
+      still we do continously delevery. now we want to continously deployment automanted
+setup CI/CD
+      go to CD pipeline-->configure-->triggers option--> click on "Build after other project are build"-->mention ci pipeline<ci project name>-->save-->
+      then build the CI project cd run automated.
+  --------------------------------------------------------------------------------------------------------------------------
+
+      
+       
+     
