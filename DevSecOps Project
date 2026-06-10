@@ -1,0 +1,78 @@
+https://github.com/CloudDevOpsHub/3tierapplicationdeplyDevSecOps/blob/main/2nd-Docker.sh
+
+Create heavy machine
+open some port
+     8080 = jenkins
+     9000 = SonarQube
+     3000 = Nodejs app
+     5000 = App
+       25 = SMTP
+  connaect to the machine
+     sudo -i
+     sudo apt update
+  --------------------------------------------------------------------------------------------------------------------------
+  Install jenkins and docker into a machine
+  
+  jenkins = https://www.jenkins.io/doc/book/installing/linux/
+  docker  = clone repo. in repo docker instrallation file present
+           chmod +x *.sh
+           and run the script ./{filename}
+               filenames--- 2nd-Docker.sh            
+                            3rd-Adduser+python.sh
+                            4th-Trivy.sh
+                            6th-RunSonarQube
+  -----------------------------------------------------------------------------------------------------------------------------------
+  Now login SonarQube and also login jenkins
+             sonarqube = serverIP:9000
+             jenkins  serverIP:8080
+  ---------------------------------------------------------------------------------------------------------------------
+  login dockerhub into machine
+             docker login -u <dockerhub name>
+  install jenkins plugins first
+            SonarQube scanner
+            Docker
+            Docker Commons
+            Docker Pipeline,
+            Docker API
+            docker-build-step
+            Pipeline stage view
+  -------------------------------------------------------------------------------------------------------------------------
+  Now dockerhub and sonarqube integrate into the jenkins (Tools install in jenkins)
+            Manage tool-->tools-->Add'sonarqube scanner'-->Name:- sonar-scanner{check install automatically = version:- 7.1..0.4889}-->
+            docker-->name:- docker-->inastall automatically:- latest version
+  -----------------------------------------------------------------------------------------------------------------------------            
+  (we install sonarqube and docker in jenkins. so both configuration into jenkins)
+  dockerhub credentical congiguration into jenkins
+             Manage jenkins-->credentical-->global click--> Add credentical-->username & password-->next-->username = shubhamgreat--> password = <dockerhub pass>
+             -->ID = docker--> description = docker--> create
+  -----------------------------------------------------------------------------------------------------------------------------------           
+  Now, first inside sonarqube tool need to genrated token (system configuration in sonarqube for jenkins)
+  sonarqube is a diff tool so first genrate token in sonarqube and then credentical configure into jenkins
+              sonarqube-->Administration-->security--> user--> click on token--> name of token = token--.set expiry-->click on genrated and keep it on the notepad
+  -----------------------------------------------------------------------------------------------------------------------------------------------            
+  Now this token add into jenkins
+              Manage jenkins-->credentical-->global click--> Add credentical-->kind 'secret text'-->secret = pass the token
+              -->ID= sonar-token-->description= sonar-token 
+             -->ID = docker--> description = docker--> create
+-----------------------------------------------------------------------------------------------------------------------------------------------------
+  Now create a sonarqube webhook creation   
+      why? and what is sonarqube webhook --> answer--> automatically trigger pipeline (jab bhi jenkins ki pipeline chalegi to ya sonarqube automatically run hogi)
+              in sonarqube-->Administration-->configuration-->webhook-->click create-->name=jenkins-->url--> jenkins url(http://13.49.78.178:8080/sonarqube-webhook/)
+              -->create
+-----------------------------------------------------------------------------------------------------------------------------------------------------------                                                                                                                       
+  Now sonarqube configure into jenkins
+               Manage jenkins-->system--> sonarqube--> click add sonarqube-->name=sonar--> server url = past sonarqube url= http://16.16.187.117:9000
+               -->and jo toke create kiya that usko calll karna in autherication section and save.
+ -----------------------------------------------------------------------------------------------------------------------------------------------------------                                                                                                                        
+  Now create pipeline project and mention jenkinsfile and save and then build it.
+                                                                                                                         
+  check 
+          serverip:5000
+          refresh the sonarqube you see the project devsecops project
+  -------------------------------------------------------------------------------------------------------------------------------------------------------                                                                                                                       
+              
+                                                                                                                         
+                                                    
+              
+              
+             
