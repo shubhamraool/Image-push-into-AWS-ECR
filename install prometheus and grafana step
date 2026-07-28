@@ -1,3 +1,82 @@
+Interview Answer: How did you configure Prometheus and Grafana on Kubernetes (GKE)?
+
+"I configured Prometheus and Grafana on a GKE cluster using Helm and the kube-prometheus-stack chart."
+
+Step 1: Create the Kubernetes Cluster
+First, I created a Google Kubernetes Engine (GKE) cluster.
+Then I connected to the cluster using kubectl.
+-------------------------------------------------------------------------------------
+
+Step 2: Create a Dedicated Namespace
+I created a separate namespace named monitor.
+This helps isolate monitoring resources from application workloads and makes management easier.
+command:- kubectl create namespace monitor
+----------------------------------------------------------------------------------------------
+Step 3: Add the Helm Repository
+I added the Prometheus Community Helm repository and updated it to get the latest charts.
+command:- helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+
+command:- helm repo update
+-----------------------------------------------------------------------------------------------------------------------
+Step 4: Install Prometheus and Grafana
+I installed the kube-prometheus-stack Helm chart.
+
+This chart automatically deploys:
+Prometheus Server
+Grafana
+Alertmanager
+Node Exporter
+kube-state-metrics
+Prometheus Operator
+
+command:- helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack \--namespace monitor
+----------------------------------------------------------------------------------------------------------------------
+Step 5: Verify the Installation
+After deployment, I verified that all monitoring components were running successfully.
+
+command:- kubectl get pods -n monitor
+I ensured all pods were in the Running state.
+-------------------------------------------------------------------------------------------------------------------
+Step 6: Expose Grafana
+Since Grafana needs to be accessed from a browser, I exposed the Grafana deployment using a LoadBalancer Service.
+kubectl expose deployment kube-prometheus-stack-grafana \
+--port=3000 \
+--target-port=3000 \
+--name=grafana \
+--type=LoadBalancer \
+-n monitor
+--------------------------------------------------------------------------------------------------------------------------
+Step 7: Verify the Service
+I verified that the LoadBalancer service was created successfully.
+command:- kubectl get svc -n monitor
+--------------------------------------------------------------------------------------
+Then I copied the External IP and accessed Grafana using:
+http://<External-IP>:3000
+-----------------------------------------------------------------------------------
+Step 8: Login to Grafana
+I used the default credentials:
+Username: admin
+Password: Retrieved from the Kubernetes Secret.
+
+---------------------------------------------------------------------------------
+Step 9: Explore Dashboards
+After logging in, I verified the preconfigured dashboards.
+The dashboards automatically displayed:
+Cluster Health
+Node CPU Usage
+Memory Usage
+Disk Utilization
+Pod Metrics
+Namespace Metrics
+Kubernetes Resource Utilization
+
+
+
+
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------
+===========================================================================================================================================================
+
   Infrastructure creation’s
 
 Step 1 Create a GKE cluster
@@ -61,3 +140,6 @@ kube-prometheus-stack-prometheus-node-exporter-5qlzf        1/1
 kube-prometheus-stack-prometheus-node-exporter-6v9v6        1/1     
 kube-prometheus-stack-prometheus-node-exporter-clcvj        1/1     
 prometheus-kube-prometheus-stack-prometheus-0   9090             2/2
+
+
+------------------------------
