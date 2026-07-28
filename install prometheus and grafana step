@@ -1,3 +1,15 @@
+"How did you configure Prometheus and Grafana on EKS?"
+
+Say:
+
+"I deployed Prometheus and Grafana on an AWS EKS cluster using the kube-prometheus-stack Helm chart. First, I created the EKS cluster and a dedicated
+monitoring namespace. Then I added the Prometheus community Helm repository and installed the kube-prometheus-stack chart, which deployed Prometheus, Grafana, 
+AlertManager, Node Exporter, and kube-state-metrics. After deployment, I verified all pods and exposed Grafana using a Kubernetes LoadBalancer service. 
+I accessed Grafana using the LoadBalancer endpoint and used the preconfigured Kubernetes dashboards to monitor cluster, node, pod, and application metrics."
+
+
+
+
 Interview Answer: How did you configure Prometheus and Grafana on Kubernetes (GKE)?
 
 "I configured Prometheus and Grafana on a GKE cluster using Helm and the kube-prometheus-stack chart."
