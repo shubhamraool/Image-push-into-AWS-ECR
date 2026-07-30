@@ -1,3 +1,6 @@
+ Install helm command:-   curl -fsSL https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3 | bash
+
+
 Create a jumphost first and connect 
 then install aws cli and aws configure on the instance
 install kubectl and eksctl
