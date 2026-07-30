@@ -1,0 +1,186 @@
+Create a jumphost first and connect 
+then install aws cli and aws configure on the instance
+install kubectl and eksctl
+then create IAM role give admin access and this role attached to the instace.
+   note: in production do not given admin level acces only needed permission we will given
+and then create cluster using below command
+  eksctl create cluster \
+--name demo-eks \
+--region ap-south-1 \
+--nodegroup-name linux-nodes \
+--node-type t3.medium \
+--nodes 2
+---------------------------------------------------------------------------------
+create namespace name is monitor
+I added the Prometheus Community Helm repository and update that repo
+uing this helm repo install prometheus and grafana 
+then this instance provide me one command where i get grafana password
+   kubectl --namespace monitor get secrets kube-prometheus-stack-grafana -o jsonpath="{.data.admin-password}" | base64 -d ; echo
+i check grafana service using below command
+   kubectl get svc -n monitor here u can see cluster ip service. now we need loadbalance service. so used below command
+        service edit:  kubectl edit svc <grafana service name> -n monitor
+                       press Insert, see type option and change clusterip to loadbalancer and save 
+and in security group open 3000 port then past dns in browzer. you can access grafana succufuly
+
+
+
+
+
+First, I launch an Ubuntu EC2 instance and install AWS CLI, kubectl, eksctl, and Helm. I attach an IAM Role to the EC2 instance so it can securely 
+communicate with AWS services without storing access keys. Then I create the EKS cluster using eksctl, verify the worker nodes with kubectl get nodes, 
+and configure cluster access using EKS Access Entries. After that, I create a dedicated monitoring namespace, add the Prometheus Community Helm repository, 
+and install the kube-prometheus-stack Helm chart. This deploys Prometheus, Grafana, Alertmanager, Node Exporter, and kube-state-metrics. Finally,
+I verify the pods and services, access Grafana using port forwarding or a LoadBalancer service, retrieve the admin password from the Kubernetes secret, 
+and use Grafana dashboards to monitor cluster CPU, memory, disk, pods, and nodes.
+
+
+===================================================================================================================================================================
+
+
+Interview Answer
+
+"In one of my hands-on projects, I configured Prometheus and Grafana on an Amazon EKS cluster to monitor the Kubernetes infrastructure."
+
+Step 1: Create a Jump Host (EC2 Instance)
+First, I launched an Ubuntu EC2 instance that acted as a jump host (bastion host). I used this server to manage the EKS cluster and execute Kubernetes commands securely.
+
+Step 2: Install Required Tools
+On the EC2 instance, I installed the required tools:
+AWS CLI
+kubectl
+eksctl
+Helm
+
+These tools are required for:
+
+AWS CLI → Connect to AWS services.
+kubectl → Manage Kubernetes resources.
+eksctl → Create and manage EKS clusters.
+Helm → Install Kubernetes applications like Prometheus and Grafana.
+
+Step 3: Attach IAM Role
+Instead of storing AWS Access Keys on the EC2 instance, I created an IAM Role and attached it to the EC2 instance.
+For my practice environment, I attached AdministratorAccess.
+But in production, we never give Administrator access. We follow the Principle of Least Privilege and assign only the required IAM permissions.
+This is an important interview point.
+
+Step 4: Create the EKS Cluster
+Then I created the EKS cluster using eksctl.
+
+eksctl create cluster \
+--name demo-eks \
+--region ap-south-1 \
+--nodegroup-name linux-nodes \
+--node-type t3.medium \
+--nodes 2
+
+This command creates:
+
+EKS Control Plane
+Worker Nodes
+VPC
+Security Groups
+IAM Roles
+Auto Scaling Group
+
+After the cluster was created, I verified the worker nodes.
+
+kubectl get nodes
+
+I ensured that all nodes were in the Ready state.
+
+Step 5: Configure Cluster Access
+Next, I configured cluster access using EKS Access Entries.
+This allows IAM users or IAM roles to authenticate and access the Kubernetes cluster securely.
+
+Step 6: Create a Monitoring Namespace
+To keep monitoring resources isolated from application workloads, I created a dedicated namespace.
+kubectl create namespace monitor
+This is a Kubernetes best practice.
+
+Step 7: Add Helm Repository
+Then I added the Prometheus Community Helm repository.
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+
+Step 8: Install Prometheus and Grafana
+Using Helm, I installed the kube-prometheus-stack.
+helm install kube-prometheus-stack prometheus-community/kube-prometheus-stack \-n monitor
+
+This single Helm chart deploys multiple monitoring components automatically:
+
+Prometheus
+Grafana
+Alertmanager
+Node Exporter
+kube-state-metrics
+
+Step 9: Verify Pods
+After installation, I checked whether all monitoring components were running.
+kubectl get pods -n monitor
+All pods should be in the Running state.
+
+Step 10: Retrieve Grafana Password
+Grafana stores the admin password inside a Kubernetes Secret.
+I retrieved it using:
+kubectl --namespace monitor get secrets kube-prometheus-stack-grafana \-o jsonpath="{.data.admin-password}" | base64 -d ; echo
+
+Step 11: Expose Grafana
+Initially, the Grafana service type was ClusterIP, which is accessible only inside the cluster.
+I changed the service type to LoadBalancer.
+kubectl edit svc kube-prometheus-stack-grafana -n monitor
+
+Changed:
+
+type: ClusterIP
+
+to
+
+type: LoadBalancer
+
+Kubernetes automatically provisioned an AWS Elastic Load Balancer.
+I also allowed TCP port 3000 in the Security Group.
+Then I copied the Load Balancer DNS and accessed Grafana from my browser.
+
+Step 12: Login to Grafana
+
+Username: admin
+Password: Retrieved from the Kubernetes Secret.
+
+Step 13: Verify Monitoring
+Finally, I verified that Prometheus was collecting metrics and Grafana dashboards were displaying:
+
+Node CPU utilization
+Memory utilization
+Disk usage
+Pod health
+Node status
+Kubernetes cluster metrics
+Container metrics
+
+This confirmed that the monitoring stack was working successfully.
+===========================================================================================================================================================
+If the interviewer asks, "How does Prometheus collect metrics?"
+
+You can answer:
+Prometheus continuously scrapes metrics from Kubernetes components at regular intervals. The Node Exporter collects operating system metrics such as CPU, 
+memory, and disk usage. kube-state-metrics exposes Kubernetes object information like deployments, pods, replicas, and namespaces. Prometheus stores all these
+metrics in its time-series database, and Grafana connects to Prometheus as a data source to visualize them using dashboards.
+
+If the interviewer asks, "Why did you use Helm?"
+
+Answer:
+Helm is the package manager for Kubernetes. Instead of manually creating multiple Deployment, Service, ConfigMap, Secret, and RBAC YAML files, Helm installs 
+and manages all the required Kubernetes resources with a single command. It also makes upgrades and rollbacks much easier.
+
+If the interviewer asks, "Why did you create a separate namespace?"
+
+Answer:
+I created a separate monitor namespace to isolate monitoring resources from application workloads. This improves organization, simplifies access control, 
+and makes it easier to manage or upgrade the monitoring stack independently.
+
+If the interviewer asks, "Why change ClusterIP to LoadBalancer?"
+
+Answer:
+By default, Grafana is exposed as a ClusterIP service, which is only accessible within the Kubernetes cluster. To access Grafana from a web browser outside 
+the cluster, I changed the service type to LoadBalancer. In AWS, this automatically creates an Elastic Load Balancer and provides a public DNS endpoint.
