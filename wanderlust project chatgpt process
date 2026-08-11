@@ -1,0 +1,2159 @@
+Yes. We can do this **step by step**, and I’ll guide you like a practical DevOps lab: **one stage at a time, with exact commands, what each command does, what output you should expect, and what to do if it fails.**
+
+I checked the repository you gave me. It is a **3-tier MERN application deployed on AWS EKS**, with GitHub → Jenkins → security scanning → Docker → Docker Hub → Argo CD → EKS, plus Prometheus/Grafana monitoring. The repository contains `frontend`, `backend`, `database`, `kubernetes`, `GitOps`, `Automations`, `terraform`, `Jenkinsfile`, etc. ([GitHub][1])
+
+![Image](https://images.openai.com/static-rsc-4/96S4Mqqjj1NDf03XTnjTCg1cQr_9jy1ykQOaozyNoYCAYoT_ZjkBfdiQB0xMAtcX8n8gubPhGMXWV2jUfgu-dBYvWYfootf-CaQsrlxdoFxwkJyLUKRyOt1um4RxOdkeucoY2Sm2RJ4pJT3LDnahlBzDcjpVSYTE5MhMQ5AB_BIdgYyGYy6Ie2QeKggeNkaG?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/pDF3zRIwpnuXJQKedzYt4y9V3TLnDz_y-NZhqH6hA7W1hy1bNL3RkuZtfmcdMK6v_ZtRbUBHRFSDDkihMwqlKzsJXzdRTDjlQ2iAxcrCICC-syUZb5W0BcamAZMlfDE943MxkwxMDD1Y2Wdfvy0wvTdffn1mAdYA0v-lt0zikzjHCevAEqecFdorgiyCgrHC?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/zmku5AIEWfmYC4xb5tgod4P4qeMBUMA2jlzQEjSTmmplf-sQdjPAbNfNR3K9mno1uSeV8KyE3Q4plKPIHhW7JvsXdcZU7r5G8lGXmVyTDlOL6wfGwOfdwNzXRSUU499b29fYjkk4TZ3Jd0O4iHrDBWsU4mZA0zVGxeyl2aeQd2xYwqSVGq4-dQqRB9eMmwUo?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/-_ymT6wnLNrIl9YozMRV6czAeLlM_tGWj-mrOJrnBeW_mZHRt2WrW2dErlo9REelg0Ecda1J1B1KgMVI2TiRhE45EyAU8wZnf8N3l74DG5N_2mfXK8nvYt5ksm9L3cGnXbMkiLl6XM6acXDWXciN5T_Ma4dGTRVoZE8JTj1TdbT1DqhZTfUdx7qJ9cicr6DP?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/z4dnRBNbRSnlJyI8vMAKYiLjfiCxCUqrrm9XpeYMbbh9YY302jXPqIVw_mj1sz4JRSsEMHuvBM7_OsMla6E86kUbKoSw_X6Scyg6a-f8IG_ypvbCkD5tpfBuuakGggmwd7iILOtrb-wKpSwUa0vS3iaEi2Lk9E6mFIIZwFXFUJoIL0dTYzR_XKkN6ENH3LTc?purpose=fullsize)
+
+![Image](https://images.openai.com/static-rsc-4/PUEUcBV2nX3GLoP5zTWqRYXjgYKrWhw9MiyCfyOJKnKbs_3lNlVbVukO0NIWhSTq8yWR6bJ3IqjCVpdlE4ws3T5Pu3XUXLKW0o7FnhhBiSmRnLbUC5zJad7qsp1r_NdEsagoFpHfnd9ghlbtLa-CdJjseqRBN1iAhXm0lueM-rKOLRyvx4_zJOjd6xv-PyNg?purpose=fullsize)
+
+# 1. First understand the complete project
+
+The final architecture will look roughly like this:
+
+```text
+                    ┌──────────────────┐
+                    │     Developer    │
+                    │  Git Push/Commit │
+                    └────────┬─────────┘
+                             │
+                             ▼
+                    ┌──────────────────┐
+                    │     GitHub       │
+                    │  Wanderlust Repo │
+                    └────────┬─────────┘
+                             │
+                             ▼
+              ┌─────────────────────────────┐
+              │       Jenkins Master        │
+              │                             │
+              │  CI/CD orchestration        │
+              └──────────────┬──────────────┘
+                             │
+                             ▼
+              ┌─────────────────────────────┐
+              │       Jenkins Worker        │
+              │                             │
+              │ Docker                      │
+              │ Trivy                       │
+              │ OWASP                       │
+              │ SonarQube Scanner           │
+              └──────────────┬──────────────┘
+                             │
+                  ┌──────────┴──────────┐
+                  ▼                     ▼
+             SonarQube              DockerHub
+             Code Quality            Images
+                                       │
+                                       ▼
+                                  ┌──────────┐
+                                  │ Argo CD  │
+                                  └────┬─────┘
+                                       │
+                                       ▼
+                              ┌─────────────────┐
+                              │    AWS EKS      │
+                              │                 │
+                              │ Frontend        │
+                              │ Backend         │
+                              │ Database        │
+                              │ Redis           │
+                              └────────┬────────┘
+                                       │
+                                       ▼
+                               Wanderlust App
+
+
+                         Monitoring
+                              │
+                     ┌────────┴────────┐
+                     ▼                 ▼
+                Prometheus          Grafana
+```
+
+The repository itself describes the technology stack as GitHub, Docker, Jenkins, OWASP, SonarQube, Trivy, Argo CD, Redis, AWS EKS, and Helm/Prometheus/Grafana. ([GitHub][1])
+
+---
+
+# 2. Very important: there is a region mistake in the README
+
+Before doing anything, notice something important.
+
+The README says the project is supposed to use:
+
+```text
+us-west-1
+```
+
+but some of its EKS commands use:
+
+```text
+us-east-2
+```
+
+For example, the repository has:
+
+```bash
+eksctl create cluster --name=wanderlust \
+                    --region=us-east-2 \
+                    --version=1.30 \
+                    --without-nodegroup
+```
+
+and the node group also uses `us-east-2`. ([GitHub][1])
+
+But later the cleanup command uses:
+
+```bash
+eksctl delete cluster --name=wanderlust --region=us-west-1
+```
+
+So **do not blindly copy every command from the README**.
+
+For our implementation, I recommend choosing **one region and using it everywhere**.
+
+Since the project README specifies California:
+
+```text
+us-west-1
+```
+
+we'll use:
+
+```text
+AWS_REGION=us-west-1
+```
+
+throughout the project.
+
+---
+
+# 3. What we are going to build
+
+We'll divide the project into these phases.
+
+| Phase | What we build            |
+| ----- | ------------------------ |
+| 1     | AWS preparation          |
+| 2     | Jenkins Master EC2       |
+| 3     | Jenkins Worker EC2       |
+| 4     | AWS CLI                  |
+| 5     | kubectl                  |
+| 6     | eksctl                   |
+| 7     | EKS cluster              |
+| 8     | Docker                   |
+| 9     | SonarQube                |
+| 10    | Trivy                    |
+| 11    | Jenkins Worker           |
+| 12    | Argo CD                  |
+| 13    | GitHub credentials       |
+| 14    | Docker Hub credentials   |
+| 15    | SonarQube integration    |
+| 16    | Jenkins CI               |
+| 17    | Jenkins CD               |
+| 18    | Argo CD deployment       |
+| 19    | Application verification |
+| 20    | Prometheus               |
+| 21    | Grafana                  |
+| 22    | Email notification       |
+| 23    | Final testing            |
+| 24    | Cleanup                  |
+
+The repository's own README follows essentially this sequence. 
+
+---
+
+# PHASE 1 — AWS preparation
+
+## Step 1 — AWS account
+
+You need:
+
+```text
+AWS Account
+GitHub Account
+Docker Hub Account
+Gmail Account
+```
+
+For AWS, you'll need permission to create:
+
+```text
+EC2
+EKS
+IAM
+VPC
+Security Groups
+Load Balancers
+CloudFormation resources
+```
+
+### Important
+
+This project can create **paid AWS resources**.
+
+Especially:
+
+```text
+EC2
+EKS
+EBS
+Load Balancer
+NAT Gateway
+CloudFormation
+```
+
+So monitor your AWS billing.
+
+---
+
+# PHASE 2 — Create Jenkins Master
+
+We first create one EC2 instance.
+
+The repository specifies approximately:
+
+```text
+2 CPU
+8 GB RAM
+29 GB disk
+```
+
+using:
+
+```text
+t2.large
+```
+
+and calls this machine the **Master machine**. ([GitHub][1])
+
+I recommend Ubuntu 22.04/24.04 LTS rather than trying to reproduce an old Ubuntu image exactly.
+
+## EC2 configuration
+
+Go to:
+
+```text
+AWS Console
+    ↓
+EC2
+    ↓
+Launch Instance
+```
+
+Set:
+
+```text
+Name:
+wanderlust-master
+
+AMI:
+Ubuntu Server LTS
+
+Instance type:
+t2.large
+
+Storage:
+30 GB approximately
+
+Key pair:
+Create/select your SSH key
+```
+
+---
+
+# PHASE 3 — Security Group
+
+Create a security group:
+
+```text
+wanderlust-sg
+```
+
+For the initial lab, you'll need access for Jenkins and later application services.
+
+At minimum:
+
+```text
+22    SSH
+8080  Jenkins
+9000  SonarQube
+```
+
+Later we'll add specific NodePorts such as:
+
+```text
+Argo CD NodePort
+Application NodePorts
+Prometheus NodePort
+Grafana NodePort
+```
+
+### Don't open everything to `0.0.0.0/0` permanently.
+
+For your own testing you can temporarily allow your IP.
+
+For example:
+
+```text
+SSH 22
+Source: My IP
+```
+
+For web services:
+
+```text
+8080
+9000
+```
+
+we can temporarily use:
+
+```text
+0.0.0.0/0
+```
+
+during the lab and tighten them later.
+
+---
+
+# PHASE 4 — Connect to Master
+
+From Windows you can use:
+
+```text
+PowerShell
+```
+
+or:
+
+```text
+MobaXterm
+```
+
+Example:
+
+```bash
+ssh -i your-key.pem ubuntu@<MASTER_PUBLIC_IP>
+```
+
+Replace:
+
+```text
+your-key.pem
+```
+
+with your actual key.
+
+And:
+
+```text
+<MASTER_PUBLIC_IP>
+```
+
+with the EC2 public IP.
+
+---
+
+# PHASE 5 — Update Ubuntu
+
+Once connected:
+
+```bash
+sudo apt update
+sudo apt upgrade -y
+```
+
+Check OS:
+
+```bash
+cat /etc/os-release
+```
+
+Check CPU:
+
+```bash
+nproc
+```
+
+Check RAM:
+
+```bash
+free -h
+```
+
+Check disk:
+
+```bash
+df -h
+```
+
+You should see approximately:
+
+```text
+CPU: 2
+RAM: ~8 GB
+Disk: ~29-30 GB
+```
+
+---
+
+# PHASE 6 — Install Docker on Master
+
+The repository uses Docker on the master. ([GitHub][1])
+
+Run:
+
+```bash
+sudo apt-get update
+```
+
+Then:
+
+```bash
+sudo apt-get install docker.io -y
+```
+
+Start Docker:
+
+```bash
+sudo systemctl start docker
+```
+
+Enable Docker:
+
+```bash
+sudo systemctl enable docker
+```
+
+Check:
+
+```bash
+sudo systemctl status docker
+```
+
+You want:
+
+```text
+active (running)
+```
+
+Now add Ubuntu user to Docker group:
+
+```bash
+sudo usermod -aG docker ubuntu
+```
+
+Refresh group:
+
+```bash
+newgrp docker
+```
+
+Test:
+
+```bash
+docker --version
+```
+
+Then:
+
+```bash
+docker ps
+```
+
+If it works without:
+
+```text
+permission denied
+```
+
+Docker is ready.
+
+---
+
+# PHASE 7 — Install Jenkins
+
+The repository installs Java 17 and Jenkins. ([GitHub][1])
+
+Run:
+
+```bash
+sudo apt update -y
+```
+
+Install Java:
+
+```bash
+sudo apt install fontconfig openjdk-17-jre -y
+```
+
+Check:
+
+```bash
+java -version
+```
+
+You should see Java 17.
+
+Now add Jenkins repository:
+
+```bash
+sudo wget -O /usr/share/keyrings/jenkins-keyring.asc \
+https://pkg.jenkins.io/debian-stable/jenkins.io-2023.key
+```
+
+Then:
+
+```bash
+echo "deb [signed-by=/usr/share/keyrings/jenkins-keyring.asc]" \
+https://pkg.jenkins.io/debian-stable binary/ | sudo tee \
+/etc/apt/sources.list.d/jenkins.list > /dev/null
+```
+
+Update:
+
+```bash
+sudo apt-get update -y
+```
+
+Install:
+
+```bash
+sudo apt-get install jenkins -y
+```
+
+Start Jenkins:
+
+```bash
+sudo systemctl start jenkins
+```
+
+Enable at boot:
+
+```bash
+sudo systemctl enable jenkins
+```
+
+Check:
+
+```bash
+sudo systemctl status jenkins
+```
+
+---
+
+# PHASE 8 — Open Jenkins
+
+Find your Master public IP:
+
+```text
+<MASTER_PUBLIC_IP>
+```
+
+Open:
+
+```text
+http://<MASTER_PUBLIC_IP>:8080
+```
+
+For example:
+
+```text
+http://13.XXX.XXX.XXX:8080
+```
+
+Jenkins will ask for the initial password.
+
+Get it with:
+
+```bash
+sudo cat /var/lib/jenkins/secrets/initialAdminPassword
+```
+
+Copy that password.
+
+Then:
+
+```text
+Jenkins
+ ↓
+Unlock Jenkins
+ ↓
+Install suggested plugins
+ ↓
+Create admin user
+```
+
+The project README also specifies Jenkins on port 8080. 
+
+---
+
+# PHASE 9 — AWS CLI
+
+Now we need AWS CLI on the Master.
+
+Run:
+
+```bash
+curl "https://awscli.amazonaws.com/awscli-exe-linux-x86_64.zip" -o "awscliv2.zip"
+```
+
+Install unzip:
+
+```bash
+sudo apt install unzip -y
+```
+
+Extract:
+
+```bash
+unzip awscliv2.zip
+```
+
+Install:
+
+```bash
+sudo ./aws/install
+```
+
+Check:
+
+```bash
+aws --version
+```
+
+---
+
+# PHASE 10 — Configure AWS CLI
+
+Run:
+
+```bash
+aws configure
+```
+
+It will ask:
+
+```text
+AWS Access Key ID:
+AWS Secret Access Key:
+Default region name:
+Default output format:
+```
+
+Use:
+
+```text
+Default region name:
+us-west-1
+```
+
+Output:
+
+```text
+json
+```
+
+Then test:
+
+```bash
+aws sts get-caller-identity
+```
+
+You should get JSON containing:
+
+```json
+{
+    "UserId": "...",
+    "Account": "...",
+    "Arn": "..."
+}
+```
+
+If this command works:
+
+**AWS CLI is correctly configured.**
+
+---
+
+# PHASE 11 — Install kubectl
+
+The original repository uses an old Kubernetes client binary. ([GitHub][1])
+
+Because we're doing this project properly rather than blindly copying an old command, I recommend installing a current kubectl compatible with your EKS version.
+
+First check:
+
+```bash
+uname -m
+```
+
+For normal x86 EC2:
+
+```text
+x86_64
+```
+
+Then install kubectl using the current stable Kubernetes release.
+
+After installation:
+
+```bash
+kubectl version --client
+```
+
+You should get something like:
+
+```text
+Client Version: ...
+```
+
+---
+
+# PHASE 12 — Install eksctl
+
+Run:
+
+```bash
+curl --silent --location \
+"https://github.com/eksctl-io/eksctl/releases/latest/download/eksctl_$(uname -s)_amd64.tar.gz" \
+| tar xz -C /tmp
+```
+
+Then:
+
+```bash
+sudo mv /tmp/eksctl /usr/local/bin
+```
+
+Check:
+
+```bash
+eksctl version
+```
+
+You should get an eksctl version.
+
+The project uses eksctl to create the EKS cluster and node group. ([GitHub][1])
+
+---
+
+# PHASE 13 — Create EKS Cluster
+
+Now comes one of the most important steps.
+
+We'll create:
+
+```text
+EKS Cluster
+Name: wanderlust
+Region: us-west-1
+```
+
+First verify AWS:
+
+```bash
+aws sts get-caller-identity
+```
+
+Then:
+
+```bash
+aws configure get region
+```
+
+It should return:
+
+```text
+us-west-1
+```
+
+Now create the cluster control plane.
+
+```bash
+eksctl create cluster \
+  --name wanderlust \
+  --region us-west-1 \
+  --version 1.30 \
+  --without-nodegroup
+```
+
+### What this does
+
+`eksctl` will create AWS infrastructure for:
+
+```text
+EKS
+VPC
+Subnets
+Security groups
+IAM resources
+Control plane
+```
+
+This can take several minutes.
+
+**Do not close your SSH session while it is running.**
+
+---
+
+# PHASE 14 — Verify EKS
+
+After completion:
+
+```bash
+aws eks list-clusters --region us-west-1
+```
+
+You should see:
+
+```text
+wanderlust
+```
+
+Then:
+
+```bash
+kubectl get nodes
+```
+
+At this point you may see:
+
+```text
+No resources found
+```
+
+That is okay.
+
+Why?
+
+Because we created:
+
+```text
+EKS Control Plane
+```
+
+but not yet:
+
+```text
+Worker Nodes
+```
+
+---
+
+# PHASE 15 — Associate OIDC
+
+Run:
+
+```bash
+eksctl utils associate-iam-oidc-provider \
+  --region us-west-1 \
+  --cluster wanderlust \
+  --approve
+```
+
+The original repository uses the same operation, although with `us-east-2` in that section. ([GitHub][1])
+
+OIDC is important for AWS IAM integration with Kubernetes service accounts.
+
+---
+
+# PHASE 16 — Create EKS Worker Nodes
+
+Before this step, make sure you have an EC2 key pair in:
+
+```text
+AWS Console
+→ EC2
+→ Key Pairs
+```
+
+For example:
+
+```text
+eks-nodegroup-key
+```
+
+Then:
+
+```bash
+eksctl create nodegroup \
+  --cluster=wanderlust \
+  --region=us-west-1 \
+  --name=wanderlust \
+  --node-type=t2.large \
+  --nodes=2 \
+  --nodes-min=2 \
+  --nodes-max=2 \
+  --node-volume-size=29 \
+  --ssh-access \
+  --ssh-public-key=eks-nodegroup-key
+```
+
+This follows the repository's node-group design, with the region corrected consistently to `us-west-1`. ([GitHub][1])
+
+---
+
+# PHASE 17 — Verify Worker Nodes
+
+Run:
+
+```bash
+kubectl get nodes
+```
+
+You want something similar to:
+
+```text
+NAME                  STATUS   ROLES
+ip-xxx-xxx-xxx        Ready    <none>
+ip-xxx-xxx-xxx        Ready    <none>
+```
+
+Also:
+
+```bash
+kubectl get pods -A
+```
+
+You should see Kubernetes system pods.
+
+Then:
+
+```bash
+kubectl cluster-info
+```
+
+---
+
+# PHASE 18 — Create Jenkins Worker
+
+Now we need another EC2 instance.
+
+Why?
+
+Because Jenkins Master should coordinate jobs while the Worker performs builds/scans.
+
+The repository specifically creates a second EC2 worker with approximately:
+
+```text
+2 CPU
+8 GB RAM
+29 GB disk
+```
+
+and Java 17. ([GitHub][1])
+
+Create:
+
+```text
+Name:
+wanderlust-jenkins-worker
+
+Instance:
+t2.large
+
+Ubuntu:
+LTS
+
+Storage:
+~30 GB
+```
+
+Attach the same security group where appropriate.
+
+---
+
+# PHASE 19 — Connect to Worker
+
+SSH:
+
+```bash
+ssh -i your-key.pem ubuntu@<WORKER_PUBLIC_IP>
+```
+
+Update:
+
+```bash
+sudo apt update -y
+```
+
+Install Java:
+
+```bash
+sudo apt install fontconfig openjdk-17-jre -y
+```
+
+Check:
+
+```bash
+java -version
+```
+
+---
+
+# PHASE 20 — Install Docker on Worker
+
+```bash
+sudo apt install docker.io -y
+```
+
+Start:
+
+```bash
+sudo systemctl start docker
+```
+
+Enable:
+
+```bash
+sudo systemctl enable docker
+```
+
+Add user:
+
+```bash
+sudo usermod -aG docker ubuntu
+```
+
+Refresh:
+
+```bash
+newgrp docker
+```
+
+Test:
+
+```bash
+docker ps
+```
+
+The repository also installs Docker on the Jenkins worker. ([GitHub][1])
+
+---
+
+# PHASE 21 — Jenkins Master → Worker SSH
+
+On the **Jenkins Master**:
+
+```bash
+ssh-keygen
+```
+
+Press:
+
+```text
+Enter
+Enter
+Enter
+```
+
+unless you want a custom key path/passphrase.
+
+Check:
+
+```bash
+ls -la ~/.ssh
+```
+
+You should have something like:
+
+```text
+id_rsa
+id_rsa.pub
+```
+
+Display public key:
+
+```bash
+cat ~/.ssh/id_rsa.pub
+```
+
+Copy the entire line.
+
+---
+
+# PHASE 22 — Add key to Jenkins Worker
+
+On Worker:
+
+```bash
+mkdir -p ~/.ssh
+```
+
+Then:
+
+```bash
+nano ~/.ssh/authorized_keys
+```
+
+Paste the public key.
+
+Save:
+
+```text
+CTRL+O
+ENTER
+CTRL+X
+```
+
+Permissions:
+
+```bash
+chmod 700 ~/.ssh
+chmod 600 ~/.ssh/authorized_keys
+```
+
+Now from Master:
+
+```bash
+ssh root@<WORKER_PUBLIC_IP>
+```
+
+If successful:
+
+```text
+SSH connection works.
+```
+
+---
+
+# PHASE 23 — Add Worker to Jenkins
+
+Go to:
+
+```text
+Jenkins
+→ Manage Jenkins
+→ Nodes
+→ New Node
+```
+
+Use:
+
+```text
+Name:
+Node
+
+Type:
+Permanent Agent
+```
+
+Executors:
+
+```text
+2
+```
+
+Remote root directory:
+
+```text
+/home/ubuntu
+```
+
+Label:
+
+```text
+Node
+```
+
+Usage:
+
+```text
+Only build jobs with label expressions matching this node
+```
+
+Launch:
+
+```text
+Launch agents via SSH
+```
+
+Host:
+
+```text
+<WORKER_PUBLIC_IP>
+```
+
+Credentials:
+
+```text
+SSH Username with private key
+```
+
+Username:
+
+```text
+ubuntu
+```
+
+Private key:
+
+```text
+Master's private key
+```
+
+The repository's original instructions use a `Node` agent and SSH launch method. ([GitHub][1])
+
+---
+
+# PHASE 24 — Verify Jenkins Worker
+
+Jenkins should eventually show:
+
+```text
+Node
+```
+
+with:
+
+```text
+Status: Online
+```
+
+This is an important checkpoint.
+
+---
+
+# PHASE 25 — Install SonarQube
+
+SonarQube runs on the **Master**.
+
+Run on Master:
+
+```bash
+docker run -d \
+  --name SonarQube-Server \
+  -p 9000:9000 \
+  sonarqube:lts-community
+```
+
+The repository uses this same basic Docker deployment. ([GitHub][1])
+
+Check:
+
+```bash
+docker ps
+```
+
+You should see:
+
+```text
+SonarQube-Server
+```
+
+Open:
+
+```text
+http://<MASTER_PUBLIC_IP>:9000
+```
+
+SonarQube will take some time to start.
+
+Check logs:
+
+```bash
+docker logs -f SonarQube-Server
+```
+
+When ready, access:
+
+```text
+http://MASTER-IP:9000
+```
+
+---
+
+# PHASE 26 — Install Trivy
+
+On Jenkins Worker:
+
+```bash
+sudo apt-get install wget apt-transport-https gnupg lsb-release -y
+```
+
+Then install Trivy.
+
+The repository includes Trivy as the filesystem security scanner. ([GitHub][1])
+
+After installation:
+
+```bash
+trivy --version
+```
+
+---
+
+# PHASE 27 — Install Argo CD
+
+Now on Master:
+
+Create namespace:
+
+```bash
+kubectl create namespace argocd
+```
+
+Install:
+
+```bash
+kubectl apply -n argocd \
+-f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+```
+
+Check:
+
+```bash
+kubectl get pods -n argocd
+```
+
+Wait until the important pods become:
+
+```text
+Running
+```
+
+You can watch:
+
+```bash
+watch kubectl get pods -n argocd
+```
+
+Exit watch:
+
+```text
+CTRL+C
+```
+
+The repository follows this same Argo CD installation flow. ([GitHub][1])
+
+---
+
+# PHASE 28 — Expose Argo CD
+
+Check:
+
+```bash
+kubectl get svc -n argocd
+```
+
+Initially `argocd-server` will normally be:
+
+```text
+ClusterIP
+```
+
+Change it:
+
+```bash
+kubectl patch svc argocd-server \
+-n argocd \
+-p '{"spec": {"type": "NodePort"}}'
+```
+
+Then:
+
+```bash
+kubectl get svc -n argocd
+```
+
+You'll see something similar to:
+
+```text
+argocd-server   NodePort   ...   443:32xxx/TCP
+```
+
+The exact port is **not** necessarily the same as the repository example.
+
+Get yours:
+
+```bash
+kubectl get svc argocd-server -n argocd
+```
+
+---
+
+# PHASE 29 — Get Argo CD password
+
+Run:
+
+```bash
+kubectl -n argocd get secret argocd-initial-admin-secret \
+-o jsonpath="{.data.password}" | base64 -d; echo
+```
+
+Username:
+
+```text
+admin
+```
+
+Password:
+
+```text
+<output from command>
+```
+
+The repository documents the same command. ([GitHub][1])
+
+---
+
+# PHASE 30 — Access Argo CD
+
+Suppose your NodePort is:
+
+```text
+32443
+```
+
+Then:
+
+```text
+https://<EKS-WORKER-PUBLIC-IP>:32443
+```
+
+**Do not use the port from the README blindly.**
+
+Always get your actual port:
+
+```bash
+kubectl get svc argocd-server -n argocd
+```
+
+---
+
+# PHASE 31 — Understand the application
+
+The repository is not just infrastructure.
+
+It contains:
+
+```text
+frontend/
+backend/
+database/
+kubernetes/
+GitOps/
+Automations/
+terraform/
+```
+
+The GitHub repository currently shows these major directories along with `Jenkinsfile` and `docker-compose.yml`. ([GitHub][1])
+
+Conceptually:
+
+```text
+frontend
+   ↓
+React/frontend application
+
+backend
+   ↓
+Node.js backend
+
+database
+   ↓
+Database-related components
+
+Redis
+   ↓
+Caching
+
+kubernetes
+   ↓
+Kubernetes manifests
+
+GitOps
+   ↓
+Deployment configuration
+
+Automations
+   ↓
+Scripts used by Jenkins
+
+Jenkinsfile
+   ↓
+CI pipeline
+```
+
+---
+
+# PHASE 32 — Understand the Jenkins pipeline
+
+This is extremely important.
+
+The repository's current `Jenkinsfile` has these stages:
+
+```text
+Validate Parameters
+        ↓
+Workspace cleanup
+        ↓
+Git checkout
+        ↓
+Trivy filesystem scan
+        ↓
+OWASP dependency check
+        ↓
+SonarQube analysis
+        ↓
+SonarQube quality gate
+        ↓
+Backend environment setup
+        +
+Frontend environment setup
+        ↓
+Docker build
+        ↓
+Docker push
+        ↓
+Wanderlust-CD
+```
+
+This is directly visible in the repository's Jenkinsfile. 
+
+For example, the pipeline expects:
+
+```text
+FRONTEND_DOCKER_TAG
+BACKEND_DOCKER_TAG
+```
+
+and refuses to continue if either is empty. 
+
+---
+
+# PHASE 33 — Important repository customization
+
+The current Jenkinsfile references:
+
+```text
+akash-9977/Wanderlust-Mega-Project
+```
+
+for checkout. 
+
+But your repository is:
+
+```text
+shubhamraool/Wanderlust-Mega-Project
+```
+
+So this is something we need to pay attention to.
+
+Also the Docker image repository is currently:
+
+```text
+akash11537
+```
+
+inside the Jenkinsfile. 
+
+If you are building this project under your own Docker Hub account, we'll need to change that.
+
+**Don't run the final CI pipeline yet.**
+
+We'll fix these values properly when we reach Jenkins CI.
+
+---
+
+# PHASE 34 — SonarQube integration
+
+Log into:
+
+```text
+http://<MASTER_PUBLIC_IP>:9000
+```
+
+Then:
+
+```text
+Administration
+→ Security
+→ Users
+→ Token
+```
+
+Create token:
+
+```text
+wanderlust-jenkins
+```
+
+Copy it.
+
+**Do not send the token to me.**
+
+We'll put it into Jenkins credentials.
+
+The repository specifically requires creating a SonarQube token and configuring it in Jenkins. ([GitHub][1])
+
+---
+
+# PHASE 35 — GitHub credentials
+
+In Jenkins:
+
+```text
+Manage Jenkins
+→ Credentials
+→ Global
+→ Add Credentials
+```
+
+Create:
+
+```text
+Kind:
+Username with password
+```
+
+Username:
+
+```text
+your-github-username
+```
+
+Password:
+
+```text
+GitHub Personal Access Token
+```
+
+ID:
+
+```text
+github
+```
+
+The repository specifically says to use a GitHub Personal Access Token as the password credential. ([GitHub][1])
+
+---
+
+# PHASE 36 — Docker Hub credentials
+
+Create Docker Hub account if you don't have one.
+
+Then Jenkins:
+
+```text
+Manage Jenkins
+→ Credentials
+→ Global
+→ Add Credentials
+```
+
+Use:
+
+```text
+Username:
+your-dockerhub-username
+
+Password:
+Docker Hub access token
+
+ID:
+dockerhub
+```
+
+We will later use this for:
+
+```text
+docker login
+docker push
+```
+
+---
+
+# PHASE 37 — Jenkins plugins
+
+Install:
+
+```text
+OWASP Dependency-Check
+SonarQube Scanner
+Docker
+Pipeline
+Pipeline Stage View
+Git
+```
+
+The repository explicitly lists OWASP, SonarQube Scanner, Docker, and Pipeline Stage View. ([GitHub][1])
+
+---
+
+# PHASE 38 — Docker socket
+
+The repository uses:
+
+```bash
+chmod 777 /var/run/docker.sock
+```
+
+on the Jenkins Worker. ([GitHub][1])
+
+For a lab environment, this may be used to avoid Docker permission problems.
+
+However, **do not consider this production-secure** because access to the Docker socket is effectively highly privileged.
+
+For now, when we reach that stage, we'll first test:
+
+```bash
+docker ps
+```
+
+as the Jenkins user and use the safer group-based approach where possible.
+
+---
+
+# PHASE 39 — Argo CD CLI
+
+We need the CLI on Master.
+
+Then login using:
+
+```bash
+argocd login <ARGOCD-IP>:<ARGOCD-PORT> --username admin
+```
+
+For example:
+
+```bash
+argocd login 10.0.1.20:32443 --username admin
+```
+
+The repository uses the same process but hardcodes an old example IP/port, which you **must not copy**. ([GitHub][1])
+
+Check:
+
+```bash
+argocd cluster list
+```
+
+---
+
+# PHASE 40 — Get EKS context
+
+Run:
+
+```bash
+kubectl config get-contexts
+```
+
+You should see your Wanderlust EKS cluster.
+
+Then:
+
+```bash
+argocd cluster add <YOUR_CONTEXT_NAME> \
+--name wanderlust-eks-cluster
+```
+
+The repository uses this method to register the EKS cluster with Argo CD. ([GitHub][1])
+
+Verify:
+
+```bash
+argocd cluster list
+```
+
+You want the cluster to be healthy/connected.
+
+---
+
+# PHASE 41 — Connect Git repository to Argo CD
+
+Open:
+
+```text
+Argo CD
+→ Settings
+→ Repositories
+→ Connect Repo
+```
+
+Enter your repository information.
+
+Important:
+
+Your repo is:
+
+```text
+shubhamraool/Wanderlust-Mega-Project
+```
+
+not the original author's repository.
+
+---
+
+# PHASE 42 — Create Argo CD Application
+
+Go:
+
+```text
+Applications
+→ New App
+```
+
+Configure:
+
+```text
+Application Name:
+wanderlust
+
+Project:
+default
+
+Sync Policy:
+Automatic
+```
+
+Then specify the repository and the correct GitOps/Kubernetes path from the repository.
+
+We'll determine the exact path from the repo files when we reach this stage.
+
+Enable:
+
+```text
+Auto-Create Namespace
+```
+
+The repository specifically calls this out as important. ([GitHub][1])
+
+---
+
+# PHASE 43 — Application deployment
+
+Once Argo CD syncs:
+
+```text
+GitHub
+   ↓
+Argo CD
+   ↓
+EKS
+```
+
+Check:
+
+```bash
+kubectl get pods -A
+```
+
+Check services:
+
+```bash
+kubectl get svc -A
+```
+
+Check deployments:
+
+```bash
+kubectl get deployments -A
+```
+
+The repository expects application NodePorts including:
+
+```text
+31000
+31100
+```
+
+but again, we should verify the actual manifests instead of assuming those values. The README tells users to expose those ports on the worker node. ([GitHub][1])
+
+---
+
+# PHASE 44 — Monitoring
+
+After the application works, we'll install:
+
+```text
+Helm
+Prometheus
+Grafana
+```
+
+Install Helm:
+
+```bash
+curl -fsSL -o get_helm.sh \
+https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+```
+
+Then:
+
+```bash
+chmod 700 get_helm.sh
+```
+
+Then:
+
+```bash
+./get_helm.sh
+```
+
+Check:
+
+```bash
+helm version
+```
+
+The repository uses Helm for Prometheus/Grafana monitoring. ([GitHub][1])
+
+---
+
+# PHASE 45 — Prometheus
+
+Add repository:
+
+```bash
+helm repo add prometheus-community \
+https://prometheus-community.github.io/helm-charts
+```
+
+Update:
+
+```bash
+helm repo update
+```
+
+Create namespace:
+
+```bash
+kubectl create namespace prometheus
+```
+
+Install:
+
+```bash
+helm install monitoring \
+prometheus-community/kube-prometheus-stack \
+-n prometheus
+```
+
+Check:
+
+```bash
+kubectl get pods -n prometheus
+```
+
+Wait until pods are:
+
+```text
+Running
+```
+
+---
+
+# PHASE 46 — Grafana
+
+Check:
+
+```bash
+kubectl get svc -n prometheus
+```
+
+Find:
+
+```text
+grafana
+```
+
+We'll change it to NodePort.
+
+Then:
+
+```bash
+kubectl get svc -n prometheus
+```
+
+Get password:
+
+```bash
+kubectl get secret \
+-n prometheus \
+-o jsonpath="{.data.admin-password}" \
+| base64 --decode ; echo
+```
+
+Username:
+
+```text
+admin
+```
+
+The repository documents the same Grafana credential retrieval approach. ([GitHub][1])
+
+---
+
+# 47. Final project flow
+
+When everything is finished, your workflow should be:
+
+```text
+Developer
+   │
+   │ git push
+   ▼
+GitHub
+   │
+   ▼
+Jenkins
+   │
+   ├── Checkout
+   │
+   ├── Trivy
+   │
+   ├── OWASP
+   │
+   ├── SonarQube
+   │
+   ├── Quality Gate
+   │
+   ├── Environment setup
+   │
+   ├── Docker Build
+   │
+   └── Docker Push
+            │
+            ▼
+        Docker Hub
+            │
+            ▼
+       Wanderlust-CD
+            │
+            ▼
+          GitOps
+            │
+            ▼
+         Argo CD
+            │
+            ▼
+          AWS EKS
+            │
+       ┌────┼─────┐
+       ▼    ▼     ▼
+   Frontend Backend Redis
+       │     │
+       └─────┘
+          │
+          ▼
+     Wanderlust App
+
+
+Monitoring:
+
+EKS
+ │
+ ├── Prometheus
+ │
+ └── Grafana
+```
+
+That is the real goal of this project.
+
+---
+
+# 48. What I recommend we do next
+
+**Don't try to execute all 48 steps at once.** That will make troubleshooting very difficult.
+
+We'll do it like a real DevOps implementation:
+
+### Stage 1
+
+AWS + Master EC2
+
+### Stage 2
+
+Docker + Jenkins
+
+### Stage 3
+
+AWS CLI + kubectl + eksctl
+
+### Stage 4
+
+EKS cluster
+
+### Stage 5
+
+EKS worker nodes
+
+### Stage 6
+
+Jenkins Worker
+
+### Stage 7
+
+SonarQube + Trivy
+
+### Stage 8
+
+Argo CD
+
+### Stage 9
+
+GitHub + Docker Hub credentials
+
+### Stage 10
+
+Jenkins CI
+
+### Stage 11
+
+Jenkins CD
+
+### Stage 12
+
+Deploy Wanderlust
+
+### Stage 13
+
+Prometheus + Grafana
+
+### Stage 14
+
+Testing + troubleshooting
+
+### Stage 15
+
+Cleanup
+
+**Most importantly, after each stage you can send me your command output/screenshot, and I'll tell you exactly whether it is correct before we move to the next stage.**
+
+For now, **start only with Stage 1: create the Master EC2 and connect to it.** Once you are inside the Master, run:
+
+```bash
+whoami
+```
+
+```bash
+cat /etc/os-release
+```
+
+```bash
+nproc
+```
+
+```bash
+free -h
+```
+
+```bash
+df -h
+```
+
+Send me those outputs, and we'll continue from there without skipping any step. The repository's own setup begins with the Master machine and Docker/Jenkins foundation. ([GitHub][1])
+
+I can also create an image showing the complete Wanderlust CI/CD architecture and the flow between every component.
+
+[1]: https://github.com/shubhamraool/Wanderlust-Mega-Project "GitHub - shubhamraool/Wanderlust-Mega-Project · GitHub"
